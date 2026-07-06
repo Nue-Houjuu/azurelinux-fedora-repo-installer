@@ -2,4 +2,4 @@
 name=Fedora 43 Updates
 baseurl=https://download.fedoraproject.org/pub/fedora/linux/updates/43/Everything/x86_64/
 enabled=1
-gpgcheck=1
+gpgcheck=0
