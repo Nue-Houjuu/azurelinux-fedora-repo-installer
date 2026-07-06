@@ -160,7 +160,7 @@ echo
 echo "Run the Desktop Installer to install KDE,"
 echo "GNOME, XFCE, Cinnamon, MATE or LXQt."
 echo
-echo "    sudo ./desktop-install.sh"
+echo "    sudo bash ./desktop-install.sh"
 echo
 echo "Project:"
 echo "https://github.com/Nue-Houjuu/azurelinux-fedora-repo-installer"
