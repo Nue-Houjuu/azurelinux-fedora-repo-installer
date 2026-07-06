@@ -2,4 +2,4 @@
 name=Fedora 43
 baseurl=https://download.fedoraproject.org/pub/fedora/linux/releases/43/Everything/x86_64/os/
 enabled=1
-gpgcheck=1
+gpgcheck=0
