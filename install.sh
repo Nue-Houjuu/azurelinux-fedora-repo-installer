@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Azure Linux Fedora Repo Installer
+# Version 1.0.0
 #
 # Repository:
 # https://github.com/Nue-Houjuu/azurelinux-fedora-repo-installer
@@ -11,64 +12,156 @@
 
 set -e
 
-REPO_URL="https://github.com/Nue-Houjuu/azurelinux-fedora-repo-installer"
-RAW_URL="https://raw.githubusercontent.com/Nue-Houjuu/azurelinux-fedora-repo-installer/main"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Detect if we're running from git or curl
-if [[ -d "$(dirname "$0")/repos" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    MODE="local"
-else
-    MODE="remote"
-fi
+clear
 
-echo "========================================="
+echo "=========================================="
 echo " Azure Linux Fedora Repo Installer"
-echo "========================================="
+echo " Version 1.0.0"
+echo "=========================================="
 echo
 
+#---------------------------------------
+# Root Check
+#---------------------------------------
+
 if [[ $EUID -ne 0 ]]; then
-    echo "Please run this script with sudo."
+    echo "Error: Please run this script as root."
+    echo
+    echo "Example:"
+    echo "sudo ./install.sh"
+    exit 1
+fi
+
+#---------------------------------------
+# Operating System Detection
+#---------------------------------------
+
+if [[ ! -f /etc/os-release ]]; then
+    echo "Unable to detect operating system."
     exit 1
 fi
 
 source /etc/os-release
 
 if [[ "$ID" != "azurelinux" ]]; then
-    echo "Unsupported distribution."
+    echo "Unsupported operating system."
+    echo
     echo "This installer only supports Microsoft Azure Linux."
     exit 1
 fi
 
-echo "Detected: $PRETTY_NAME"
-
-mkdir -p /etc/yum.repos.d/backup
-cp -f /etc/yum.repos.d/*.repo /etc/yum.repos.d/backup/ 2>/dev/null || true
-
+echo "Detected:"
+echo "  $PRETTY_NAME"
 echo
-echo "Installing Fedora repositories..."
 
-if [[ "$MODE" == "local" ]]; then
+#---------------------------------------
+# Verify Installer Files
+#---------------------------------------
 
-    cp "$SCRIPT_DIR/repos/fedora.repo" /etc/yum.repos.d/
-    cp "$SCRIPT_DIR/repos/fedora-updates.repo" /etc/yum.repos.d/
+if [[ ! -f "$SCRIPT_DIR/repos/fedora.repo" ]]; then
+    echo "Error:"
+    echo "Missing file: repos/fedora.repo"
+    exit 1
+fi
 
-else
+if [[ ! -f "$SCRIPT_DIR/repos/fedora-updates.repo" ]]; then
+    echo "Error:"
+    echo "Missing file: repos/fedora-updates.repo"
+    exit 1
+fi
 
-    curl -fsSL "$RAW_URL/repos/fedora.repo" \
-        -o /etc/yum.repos.d/fedora.repo
+#---------------------------------------
+# Repository Backup
+#---------------------------------------
 
-    curl -fsSL "$RAW_URL/repos/fedora-updates.repo" \
-        -o /etc/yum.repos.d/fedora-updates.repo
+BACKUP_DIR="/etc/yum.repos.d/backup-$(date +%Y%m%d-%H%M%S)"
+
+echo "Creating repository backup..."
+
+mkdir -p "$BACKUP_DIR"
+
+cp -f /etc/yum.repos.d/*.repo "$BACKUP_DIR"/ 2>/dev/null || true
+
+echo "Backup saved to:"
+echo "  $BACKUP_DIR"
+echo
+
+#---------------------------------------
+# Existing Repository Check
+#---------------------------------------
+
+if [[ -f /etc/yum.repos.d/fedora.repo ]] || [[ -f /etc/yum.repos.d/fedora-updates.repo ]]; then
+
+    echo "Fedora repositories are already installed."
+    echo
+
+    while true; do
+
+        read -rp "Do you want to overwrite them? [y/N]: " OVERWRITE
+
+        case "$OVERWRITE" in
+
+            [Yy]|[Yy][Ee][Ss])
+
+                echo
+                echo "Overwriting Fedora repositories..."
+                echo
+                break
+                ;;
+
+            [Nn]|[Nn][Oo]|"")
+
+                echo
+                echo "Installation cancelled."
+                exit 0
+                ;;
+
+            *)
+
+                echo "Please answer y or n."
+                ;;
+
+        esac
+
+    done
 
 fi
+
+#---------------------------------------
+# Install Fedora Repositories
+#---------------------------------------
+
+echo "Installing Fedora repositories..."
+
+cp -f "$SCRIPT_DIR/repos/fedora.repo" /etc/yum.repos.d/
+cp -f "$SCRIPT_DIR/repos/fedora-updates.repo" /etc/yum.repos.d/
+
+echo "Done."
+echo
+
+#---------------------------------------
+# Refresh DNF Cache
+#---------------------------------------
+
+echo "Refreshing DNF cache..."
 
 dnf clean all
 dnf makecache
 
 echo
-echo "Fedora repositories installed successfully!"
+echo "=========================================="
+echo " Fedora repositories installed successfully!"
+echo "=========================================="
 echo
-echo "Repository:"
-echo "$REPO_URL"
+echo "Next step:"
+echo
+echo "Run the Desktop Installer to install KDE,"
+echo "GNOME, XFCE, Cinnamon, MATE or LXQt."
+echo
+echo "    sudo ./desktop-install.sh"
+echo
+echo "Project:"
+echo "https://github.com/Nue-Houjuu/azurelinux-fedora-repo-installer"
 echo
