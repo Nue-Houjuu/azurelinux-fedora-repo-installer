@@ -72,6 +72,3 @@ echo
 echo "Repository:"
 echo "$REPO_URL"
 echo
-echo "To install a desktop environment run:"
-echo
-echo "    sudo ./desktop.sh"
