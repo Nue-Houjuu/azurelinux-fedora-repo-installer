@@ -1,6 +1,11 @@
-# azurelinux-fedora-repo-installer
-Adds official Fedora repositories to Microsoft Azure Linux, making it easy to install Fedora packages and desktop environments for experimentation.
+# Azure Linux Fedora Repo Installer
 
-Designed for testing, experimentation, and non-production systems.
+Adds the official Fedora repositories to Microsoft Azure Linux, allowing installation of Fedora packages and optional desktop environments.
 
-This project is not affiliated with, endorsed by, or supported by Microsoft or the Fedora Project.
+> ⚠️ Warning
+>
+> This project is intended for testing and experimentation only.
+>
+> It is **NOT** affiliated with, endorsed by, or supported by Microsoft or the Fedora Project.
+>
+> Mixing Fedora repositories with Azure Linux may cause package conflicts or produce an unsupported system..
