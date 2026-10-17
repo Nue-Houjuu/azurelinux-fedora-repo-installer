@@ -1,14 +1,127 @@
-Azure Linux Fedora Repo Installer
+# Azure Linux + Fedora Repository Installer
 
-Adds the official Fedora repositories to Microsoft Azure Linux, allowing installation of Fedora packages and optional desktop environments.
+Experimental helper scripts for evaluating Fedora desktop packages on **Azure Linux 4.0**.
 
-⚠️ Warning
-This project is intended for testing and experimentation only. It is NOT affiliated with, endorsed by, or supported by Microsoft or the Fedora Project. Mixing Fedora repositories with Azure Linux may cause package conflicts or produce an unsupported system. I did this more for me while I was testing Azure Linux.
+> **Warning:** This project is experimental and unsupported. Azure Linux is not a Fedora respin. Mixing Fedora RPMs with Azure Linux can create dependency conflicts, replace core components, or make the system unbootable. Azure Linux 4.0 is a preview release. Test in a disposable VM or snapshot first.
 
-How it works
+## Safety defaults
 
-This project bridges the gap between the minimal, cloud-native Azure Linux environment and the extensive software ecosystem of Fedora. The process is divided into two logical stages to ensure system integrity:
+- Fedora repositories are installed **disabled** (`enabled=0`).
+- RPM signature checking is enabled (`gpgcheck=1`).
+- The scripts never run `distro-sync`, never remove packages, and never overwrite Azure Linux release packages intentionally.
+- Installing a desktop requires an explicit `--enable-fedora-mixing` acknowledgement.
+- `--assumeno` is supported for reviewing the proposed transaction without applying it.
+- Fedora repository release is configurable; default is Fedora 43. Only use a Fedora release compatible with the target package set.
 
-    Base Configuration (install.sh): This script acts as the foundation by enabling the official Fedora repositories within Azure Linux. This allows the system to resolve and pull missing dependencies that are absent in the default Azure Linux image.
+These safeguards reduce risk; they do not make cross-distribution package mixing safe.
 
-    Desktop Deployment (desktop-install.sh): This stage deploys the graphical environment for example (Xfce/KDE)
+## Contents
+
+```text
+.
+├── install.sh
+├── desktop-install.sh
+├── README.md
+├── LICENSE
+├── .gitignore
+├── repos/
+│   ├── fedora.repo
+│   ├── fedora-updates.repo
+│   └── repos.txt
+└── desktop/
+    ├── common.sh
+    ├── gnome.sh
+    ├── kde.sh
+    ├── lxqt.sh
+    ├── mate.sh
+    └── xfce.sh
+```
+
+## Requirements
+
+- Azure Linux 4.0 x86_64, for the intended target.
+- Bash, `dnf5` or a working `dnf` command backed by DNF5.
+- Root privileges for repository installation and package installation.
+- Network access to official Fedora mirrors.
+
+The scripts intentionally refuse to modify an ordinary Fedora host or an unrelated distribution by default.
+
+## Install repository definitions
+
+Clone the project, inspect it, then run:
+
+```bash
+git clone https://github.com/Nue-Houjuu/azurelinux-fedora-repo-installer.git
+cd azurelinux-fedora-repo-installer
+less install.sh
+sudo ./install.sh
+```
+
+The repository files are copied to `/etc/yum.repos.d/` with Fedora repositories disabled. Unique filenames are used so the installer does not overwrite the standard `fedora.repo` files. The installer backs up any existing files with the same names before replacing them.
+
+Check the result:
+
+```bash
+dnf5 repolist --all
+```
+
+The repo IDs are `fedora-azurelinux-experimental` and `updates-azurelinux-experimental`.
+
+## Preview a desktop transaction
+
+Always review the package transaction before applying it. For example:
+
+```bash
+sudo ./desktop-install.sh --desktop kde --enable-fedora-mixing --assumeno
+```
+
+To actually proceed, remove `--assumeno`:
+
+```bash
+sudo ./desktop-install.sh --desktop kde --enable-fedora-mixing
+```
+
+You must explicitly acknowledge Fedora/Azure Linux package mixing. The package names are best-effort and have not been validated on every Azure Linux 4.0 image. DNF may report missing packages or dependency conflicts. Do not force a transaction that proposes removing core Azure Linux packages.
+
+Available desktop selections: `kde`, `gnome`, `xfce`, `mate`, `lxqt`.
+
+Interactive selector:
+
+```bash
+sudo ./desktop-install.sh --enable-fedora-mixing --assumeno
+```
+
+## Repository release
+
+Default is Fedora 43. To select another release, set `FEDORA_RELEASE` when installing repo files, and use the same value for desktop package installation:
+
+```bash
+sudo FEDORA_RELEASE=43 ./install.sh
+sudo FEDORA_RELEASE=43 ./desktop-install.sh --desktop xfce --enable-fedora-mixing --assumeno
+```
+
+Do not assume a Fedora release is compatible simply because its repository exists. Review the Fedora lifecycle and package compatibility before changing it.
+
+## Rollback repository definitions
+
+The installer prints the backup path when it replaces a same-named repo file. Restore those files manually if needed. To disable the experimental repos immediately:
+
+```bash
+sudo dnf5 config-manager setopt fedora-azurelinux-experimental.enabled=0
+sudo dnf5 config-manager setopt updates-azurelinux-experimental.enabled=0
+```
+
+If `config-manager` is unavailable, edit `/etc/yum.repos.d/azurelinux-fedora-experimental.repo` and `/etc/yum.repos.d/azurelinux-fedora-updates-experimental.repo` and set `enabled=0`.
+
+This only disables the repositories; it does **not** remove packages already installed from Fedora.
+
+## Security notes
+
+- `gpgcheck=1` is enabled. Fedora signing keys must be available on the target system for RPM signature verification. If DNF reports a missing key, stop and install/verify the official Fedora signing key using Fedora's documented process. Do not work around the error by setting `gpgcheck=0`.
+- Repository metadata signing (`repo_gpgcheck`) is not forced on because repository metadata-signing support/configuration can vary; RPM package signature checking remains enabled.
+- Never run an installer from the Internet with `curl | sudo bash`.
+- Inspect changes and test in a disposable VM snapshot before using them on a system you care about.
+
+## Current status
+
+This is an experimental project scaffold, not a supported system migration tool. A successful package transaction does not prove that the resulting desktop session, graphics stack, audio, networking, boot, or future updates will work.
