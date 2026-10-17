@@ -15,7 +15,7 @@ Usage:
 Options:
   --desktop NAME            kde, gnome, xfce, mate, or lxqt
   --enable-fedora-mixing    Required acknowledgement before enabling Fedora repos
-  --assumeno                Ask DNF to resolve/show the transaction but not apply it
+  --assumeno                Ask package manager to resolve/show the transaction but not apply it
   --fedora-release NUMBER   Fedora release number (default: 43)
   -h, --help                Show this help
 
@@ -50,7 +50,17 @@ source /etc/os-release
 [[ "${ID:-}" == "azurelinux" ]] || die "This installer targets Azure Linux only; detected ID=${ID:-unknown}."
 [[ "$FEDORA_RELEASE" =~ ^[0-9]+$ ]] || die "FEDORA_RELEASE must be numeric."
 (( ALLOW_MIXING == 1 )) || die "Refusing to mix repositories without explicit acknowledgement. Read README.md, then pass --enable-fedora-mixing."
-command -v dnf5 >/dev/null 2>&1 && DNF=(dnf5) || { command -v dnf >/dev/null 2>&1 && DNF=(dnf) || die "DNF5/DNF not found."; }
+
+# Detección nativa del gestor de paquetes (dnf5, dnf o tdnf)
+if command -v dnf5 >/dev/null 2>&1; then
+    DNF=(dnf5)
+elif command -v dnf >/dev/null 2>&1; then
+    DNF=(dnf)
+elif command -v tdnf >/dev/null 2>&1; then
+    DNF=(tdnf)
+else
+    die "DNF5/DNF/TDNF not found."
+fi
 
 if [[ -z "$DESKTOP" ]]; then
     printf 'Choose a desktop environment (experimental):\n'
@@ -89,7 +99,7 @@ args=(
 (( ASSUME_NO == 1 )) && args+=(--assumeno)
 
 printf '\nDesktop: %s\nFedora release: %s\nPackages: %s\n' "$DESKTOP" "$FEDORA_RELEASE" "${DESKTOP_PACKAGES[*]}"
-printf '\nWARNING: DNF may propose conflicting or destructive dependency changes.\n'
+printf '\nWARNING: Package manager may propose conflicting or destructive dependency changes.\n'
 printf 'Do not proceed if the transaction removes Azure Linux release, boot, systemd, networking, or other core packages.\n\n'
 
 # Repos are installed by install.sh with default Fedora release 43. If the requested
