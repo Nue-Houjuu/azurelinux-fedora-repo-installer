@@ -1,5 +1,7 @@
-[fedora]
-name=Fedora 43
-baseurl=https://download.fedoraproject.org/pub/fedora/linux/releases/43/Everything/x86_64/os/
-enabled=1
-gpgcheck=0
+[fedora-azurelinux-experimental]
+name=Fedora @FEDORA_RELEASE@ - Everything (experimental for Azure Linux)
+baseurl=https://download.fedoraproject.org/pub/fedora/linux/releases/@FEDORA_RELEASE@/Everything/$basearch/os/
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-@FEDORA_RELEASE@-primary
+skip_if_unavailable=False

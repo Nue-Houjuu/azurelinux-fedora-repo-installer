@@ -1,1 +1,4 @@
--0
+# Experimental Fedora repositories configured by install.sh.
+# They are deliberately disabled by default.
+fedora-azurelinux-experimental
+updates-azurelinux-experimental
