@@ -8,9 +8,9 @@ Experimental helper scripts for evaluating Fedora desktop packages on **Azure Li
 
 - Fedora repositories are installed **disabled** (`enabled=0`).
 - RPM signature checking is enabled (`gpgcheck=1`).
-- The scripts never run `distro-sync`, never remove packages, and never overwrite Azure Linux release packages intentionally.
+- The scripts never run `distro-sync`, never remove packages intentionally, and exclude Azure Linux/Fedora release packages from the desktop install transaction.
 - Installing a desktop requires an explicit `--enable-fedora-mixing` acknowledgement.
-- `--assumeno` is supported for reviewing the proposed transaction without applying it.
+- `--assumeno` is supported for reviewing the proposed transaction without applying it, provided the selected package manager supports that option.
 - Fedora repository release is configurable; default is Fedora 43. Only use a Fedora release compatible with the target package set.
 
 These safeguards reduce risk; they do not make cross-distribution package mixing safe.
@@ -40,11 +40,11 @@ These safeguards reduce risk; they do not make cross-distribution package mixing
 ## Requirements
 
 - Azure Linux 4.0 x86_64, for the intended target.
-- Bash, `dnf5` or a working `dnf` command backed by DNF5.
+- Bash and one supported package-manager command: `tdnf`, `dnf5`, or `dnf`.
 - Root privileges for repository installation and package installation.
 - Network access to official Fedora mirrors.
 
-The scripts intentionally refuse to modify an ordinary Fedora host or an unrelated distribution by default.
+The scripts intentionally refuse to modify an ordinary Fedora host or an unrelated distribution by default. Package-manager options can differ by version; review the proposed transaction before confirming it.
 
 ## Install repository definitions
 
@@ -59,10 +59,14 @@ sudo ./install.sh
 
 The repository files are copied to `/etc/yum.repos.d/` with Fedora repositories disabled. Unique filenames are used so the installer does not overwrite the standard `fedora.repo` files. The installer backs up any existing files with the same names before replacing them.
 
-Check the result:
+Check the result using the package manager available on your system:
 
 ```bash
+tdnf repolist --all
+# Or, if installed:
 dnf5 repolist --all
+# Or:
+dnf repolist --all
 ```
 
 The repo IDs are `fedora-azurelinux-experimental` and `updates-azurelinux-experimental`.
@@ -81,7 +85,7 @@ To actually proceed, remove `--assumeno`:
 sudo ./desktop-install.sh --desktop kde --enable-fedora-mixing
 ```
 
-You must explicitly acknowledge Fedora/Azure Linux package mixing. The package names are best-effort and have not been validated on every Azure Linux 4.0 image. DNF may report missing packages or dependency conflicts. Do not force a transaction that proposes removing core Azure Linux packages.
+You must explicitly acknowledge Fedora/Azure Linux package mixing. The package names are best-effort and have not been validated on every Azure Linux 4.0 image. The package manager may report missing packages, unsupported options, or dependency conflicts. Do not force a transaction that proposes removing core Azure Linux packages.
 
 Available desktop selections: `kde`, `gnome`, `xfce`, `mate`, `lxqt`.
 
@@ -104,24 +108,22 @@ Do not assume a Fedora release is compatible simply because its repository exist
 
 ## Rollback repository definitions
 
-The installer prints the backup path when it replaces a same-named repo file. Restore those files manually if needed. To disable the experimental repos immediately:
+The installer prints the backup path when it replaces a same-named repo file. Restore those files manually if needed. To disable the experimental repos, edit these files:
 
-```bash
-sudo dnf5 config-manager setopt fedora-azurelinux-experimental.enabled=0
-sudo dnf5 config-manager setopt updates-azurelinux-experimental.enabled=0
-```
+- `/etc/yum.repos.d/azurelinux-fedora-experimental.repo`
+- `/etc/yum.repos.d/azurelinux-fedora-updates-experimental.repo`
 
-If `config-manager` is unavailable, edit `/etc/yum.repos.d/azurelinux-fedora-experimental.repo` and `/etc/yum.repos.d/azurelinux-fedora-updates-experimental.repo` and set `enabled=0`.
+Set `enabled=0` in each repository section. This manual method works without relying on a package-manager-specific `config-manager` command. If your package manager provides a supported repository configuration command, you may use it instead.
 
 This only disables the repositories; it does **not** remove packages already installed from Fedora.
 
 ## Security notes
 
-- `gpgcheck=1` is enabled. Fedora signing keys must be available on the target system for RPM signature verification. If DNF reports a missing key, stop and install/verify the official Fedora signing key using Fedora's documented process. Do not work around the error by setting `gpgcheck=0`.
+- `gpgcheck=1` is enabled. Fedora signing keys must be available on the target system for RPM signature verification. If the package manager reports a missing key, stop and install/verify the official Fedora signing key using Fedora's documented process. Do not work around the error by setting `gpgcheck=0`.
 - Repository metadata signing (`repo_gpgcheck`) is not forced on because repository metadata-signing support/configuration can vary; RPM package signature checking remains enabled.
 - Never run an installer from the Internet with `curl | sudo bash`.
 - Inspect changes and test in a disposable VM snapshot before using them on a system you care about.
 
 ## Current status
 
-This is an experimental project scaffold, not a supported system migration tool. A successful package transaction does not prove that the resulting desktop session, graphics stack, audio, networking, boot, or future updates will work.
+This is an experimental project scaffold, not a supported system migration tool. Shell syntax checks do not validate package availability, dependency resolution, package-manager option compatibility, or the resulting desktop session. A successful package transaction does not prove that the desktop, graphics stack, audio, networking, boot, or future updates will work.

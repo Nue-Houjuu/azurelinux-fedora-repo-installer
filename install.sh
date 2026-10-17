@@ -17,17 +17,7 @@ source /etc/os-release
 
 [[ "${ID:-}" == "azurelinux" ]] || die "This installer targets Azure Linux only; detected ID=${ID:-unknown}."
 [[ "$FEDORA_RELEASE" =~ ^[0-9]+$ ]] || die "FEDORA_RELEASE must be a numeric Fedora release, e.g. 43."
-
-# Soporte nativo para dnf5, dnf o tdnf
-if command -v dnf5 >/dev/null 2>&1; then
-    PKG_MGR="dnf5"
-elif command -v dnf >/dev/null 2>&1; then
-    PKG_MGR="dnf"
-elif command -v tdnf >/dev/null 2>&1; then
-    PKG_MGR="tdnf"
-else
-    die "DNF5/DNF/TDNF was not found."
-fi
+command -v tdnf >/dev/null 2>&1 || command -v dnf5 >/dev/null 2>&1 || command -v dnf >/dev/null 2>&1 || die "No supported package manager found (tdnf, dnf5, or dnf)."
 
 [[ -d "$SCRIPT_DIR/repos" ]] || die "Cannot find the repository's repos/ directory."
 [[ -f "$SCRIPT_DIR/repos/fedora.repo" && -f "$SCRIPT_DIR/repos/fedora-updates.repo" ]] || die "Repository template files are missing."
@@ -56,7 +46,13 @@ for name in azurelinux-fedora-experimental.repo azurelinux-fedora-updates-experi
 done
 
 info "Repository definitions installed. They remain disabled (enabled=0)."
-info "Review them with: $PKG_MGR repolist --all"
+if command -v tdnf >/dev/null 2>&1; then
+    info "Review them with: tdnf repolist --all"
+elif command -v dnf5 >/dev/null 2>&1; then
+    info "Review them with: dnf5 repolist --all"
+else
+    info "Review them with: dnf repolist --all"
+fi
 info "Backup directory: $BACKUP_DIR"
 printf '\nIMPORTANT: Adding repository files does not make Fedora packages compatible with Azure Linux.\n'
 printf 'Use desktop-install.sh only in a disposable VM and only after reviewing a --assumeno transaction.\n'
