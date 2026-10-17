@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
-
-echo
-echo "Installing XFCE..."
-echo
-
-dnf group install xfce-desktop -y
-
-dnf install lightdm lightdm-gtk -y
-
-systemctl enable lightdm
-
-systemctl set-default graphical.target
-
-echo
-echo "XFCE installed successfully!"
+# Package list is defined in common.sh and executed by desktop-install.sh.
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/common.sh"
+load_desktop_packages xfce
+printf '%s\n' "${DESKTOP_PACKAGES[@]}"
